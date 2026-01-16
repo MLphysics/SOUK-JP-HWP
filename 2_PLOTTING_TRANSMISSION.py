@@ -39,9 +39,15 @@ def simpleplot(dfsam, dfref):
 
 
 
-DIR = "C:/Users/matth/OneDrive - Cardiff University/PhD/JP_Sapphire-testing/Data/"
-BAND = ["GBand/"]
-SAMPLE = "Alumina/" 
+
+
+DIR = ( Path.home() / "OneDrive" / "Documents" / "PhD Cardiff" / "Git repos" / "SOUK-JP-HWP-" / "Data")
+
+BAND = ["GBand",]
+
+
+SAMPLE = "20260116_MF2_rotation_test"
+"detailed" / "IMAG"
 angle = [0]
 
 

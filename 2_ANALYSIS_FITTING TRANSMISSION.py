@@ -4,55 +4,124 @@ Created on Thu Jan 15 06:15:33 2026
 
 @author: matth
 """
+
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from pathlib import Path
 
-def importfile(file):
+
+# ------------------------
+# Band definition
+# ------------------------
+class Gband:
+    name = "Gband"
+    bandletter = name
+    lf = 140
+    uf = 220
+
+
+# ------------------------
+# I/O and processing
+# ------------------------
+def importfile(file: Path) -> pd.DataFrame:
     f = np.load(file)
-    freq = f["freq"]
-    data = f["data"]
-    
-    df = pd.DataFrame({"freq": freq, 
-                       "data": data})
-    return df
-    
-def resample(df, nf):
-    newdata = np.interp(nf, df["freq"], df["data"])
-    newdf = pd.DataFrame({"freq": nf, 
-                           "data": newdata})
-    return newdf
+    return pd.DataFrame({
+        "freq": f["freq"],
+        "data": f["data"]
+    })
 
-def cleandata(df):
-    freq = df["freq"]
-    data = df["data"]
-    data.rolling(window=3, min_periods=1).mean()
-    
-    df = pd.DataFrame({"freq": freq, 
-                       "data": data})
-    return df
-    
-def simpleplot(dfsam, dfref):
+
+def resample(df: pd.DataFrame, nf: np.ndarray) -> pd.DataFrame:
+    newdata = np.interp(nf, df["freq"], df["data"])
+    return pd.DataFrame({
+        "freq": nf,
+        "data": newdata
+    })
+
+
+def cleandata(df: pd.DataFrame) -> pd.DataFrame:
+    data_smoothed = df["data"].rolling(window=3, min_periods=1).mean()
+    return pd.DataFrame({
+        "freq": df["freq"],
+        "data": data_smoothed
+    })
+
+
+def simpleplot(dfsam: pd.DataFrame, dfref: pd.DataFrame) -> None:
     plt.figure()
-    plt.plot(dfref["freq"], dfsam["data"]/ dfref["data"])
+    plt.plot(dfref["freq"], dfsam["data"] / dfref["data"])
+    plt.xlabel("Frequency")
+    plt.ylabel("Transmission")
     plt.show()
 
-def main(pathref, pathsam):
-    
-    dfref = importfile(pathref)
-    dfsam = importfile(pathsam)
-    
-    f = np.linspace(140, 220, 1000)
-    
-    dfref = resample(dfref,f)
-    dfsam = resample(dfsam,f ) 
-    
+
+def transmissioncalc(dfsam: pd.DataFrame,
+                     dfref: pd.DataFrame,
+                     freq: np.ndarray) -> pd.DataFrame:
+    return pd.DataFrame({
+        "freq": freq,
+        "trans": 10 ** ((dfsam["data"] - dfref["data"])/20)
+    })
+
+
+def savedata(newpath: Path,
+             material: str,
+             band: str,
+             date: str,
+             angle: str,
+             df: pd.DataFrame) -> None:
+
+    newpath.mkdir(parents=True, exist_ok=True)
+    filename = f"{band}_trans_{angle}_{material}_{date}.txt"
+    df.to_csv(newpath / filename, sep=",", index=False)
+
+
+# ------------------------
+# Main workflow
+# ------------------------
+def main(pathref, scan, material, date, SUBFOLD, band):
+    # Common frequency space
+    freq_common = np.linspace(band.lf, band.uf, 1000)
+
+    base_dir = Path.cwd()
+
+    # ----- Reference -----
+    ref_path = base_dir / "Data" / band.name / pathref
+    dfref = importfile(ref_path)
+    dfref = resample(dfref, freq_common)
     dfref = cleandata(dfref)
-    dfsam = cleandata(dfsam ) 
-    
-    simpleplot(dfsam, dfref)
-    
+
+    # ----- Samples -----
+    scanfold = f"{date}_{scan}"
+    sample_dir = base_dir / "Data" / band.name / scanfold / SUBFOLD
+
+    pathlist = sample_dir.glob("**/*.npz")
+
+    for path in pathlist:
+        print(path)
+
+        filename = path.name
+        angle = filename.split("_")[2]
+
+        dfsam = importfile(path)
+        dfsam = resample(dfsam, freq_common)
+        dfsam = cleandata(dfsam)
+
+        dft = transmissioncalc(dfsam, dfref, freq_common)
+
+        outdir = base_dir / "Data" / "Transmission"
+        savedata(outdir, material, band.name, date, angle, dft)
 
 
-main( "C:/Users/matth/OneDrive - Cardiff University/PhD/JP_Sapphire-testing/Data/Alumina/Air-after-ppol-inc7-20260115-1_1000Hz_G_band_N_1001_20260115150828.npz"
-     ,"C:/Users/matth/OneDrive - Cardiff University/PhD/JP_Sapphire-testing/Data/Alumina/D505-Alumina-2-3-ppol-inc7-20260115-1_1000Hz_G_band_N_1001_20260115150701.npz")
+# ------------------------
+# Run
+# ------------------------
+main(
+    pathref="Air-before-ppol-20260116-2_1000Hz_G_band_N_1001_20260116143406.npz",
+    scan="MF2_rotation_test",
+    material="sapphire_MF2",
+    date="20260116",
+    SUBFOLD="MLOG",  # or "detailed"
+    band=Gband
+)
