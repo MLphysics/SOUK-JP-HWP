@@ -61,7 +61,7 @@ def transmissioncalc(dfsam: pd.DataFrame,
                      freq: np.ndarray) -> pd.DataFrame:
     return pd.DataFrame({
         "freq": freq,
-        "trans": 10 ** ((dfsam["data"] - dfref["data"])/20)
+        "trans": 10 ** ((dfsam["data"] - dfref["data"])/10)
     })
 
 
@@ -98,6 +98,7 @@ def main(pathref, scan, material, date, SUBFOLD, band):
 
     pathlist = sample_dir.glob("**/*.npz")
 
+    plt.figure()
     for path in pathlist:
         print(path)
 
@@ -112,13 +113,17 @@ def main(pathref, scan, material, date, SUBFOLD, band):
 
         outdir = base_dir / "Data" / "Transmission"
         savedata(outdir, material, band.name, date, angle, dft)
-
+    
+    
+        plt.plot(dfsam["freq"], dfsam["data"])
+        plt.plot(dft["freq"], dft["trans"])
+    plt.show()
 
 # ------------------------
 # Run
 # ------------------------
 main(
-    pathref="Air-before-ppol-20260116-2_1000Hz_G_band_N_1001_20260116143406.npz",
+    pathref="C:/Users/matth/OneDrive/Documents/PhD Cardiff/Git repos/SOUK-JP-HWP-/Data/GBand/20260116_D505mm-Alumina/Air-after-ppol-20260116-1_1000Hz_G_band_N_1001_20260116133606.npz",
     scan="MF2_rotation_test",
     material="sapphire_MF2",
     date="20260116",
