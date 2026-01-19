@@ -238,17 +238,15 @@ def main(pathref, scan, material, date, SUBFOLD, band, INTERPPEAKS = True):
             color="red"
         )
     
-    if INTERPPEAKS == True:
-        plt.scatter(peak_ang_interp, peak_vals_interp, marker = "x", c= "black", alpha= 0.3, label="peaks from quadratic") ### add peaks to our plot
+    if INTERPPEAKS:
+        plt.scatter(peak_ang_interp, peak_vals_interp, marker="x", c="black", alpha=0.3, label="peaks from quadratic")
         
-        idxx = np.argsort(np.array(peak_ang_interp_line))
-        
-        peak_ang_interp_line=np.array(peak_ang_interp_line)[idxx]
-        peak_vals_interp_line=np.array(peak_vals_interp_line)[idxx]
-        
-        plt.plot(peak_ang_interp_line, peak_vals_interp_line, c="black", alpha=0.3)
-        
-        
+        # Plot each quadratic line individually in correct order
+        for xline, yline in zip(peak_ang_interp_line, peak_vals_interp_line):
+            # Make sure xline is sorted (ascending) before plotting
+            idx_sort = np.argsort(xline)
+            plt.plot(xline[idx_sort], yline[idx_sort], c="black", alpha=0.3, lw = 5)
+    
         # Label quadratic-interpolated peak points
         for x, y in zip(peak_ang_interp, peak_vals_interp):
             plt.annotate(
@@ -261,6 +259,7 @@ def main(pathref, scan, material, date, SUBFOLD, band, INTERPPEAKS = True):
                 alpha=0.3
             )
 
+
     
     
     
@@ -271,7 +270,6 @@ def main(pathref, scan, material, date, SUBFOLD, band, INTERPPEAKS = True):
         ms=3,
         linestyle="-"
     )
-    
     
     
     plt.xlabel("Angle (deg)")
@@ -299,7 +297,7 @@ main(
     scan="MF2_rotation_test",
     material="sapphire_MF2",
     date="20260116",
-    SUBFOLD="MLOG",
+    SUBFOLD= "MLOG",
     band=Gband
 )
 
