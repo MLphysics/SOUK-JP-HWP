@@ -9,7 +9,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from pathlib import Path
-
+import matplotlib.cm as cm
+import matplotlib.colors as mcolors
+import re
 
 
 # Band definition
@@ -75,7 +77,7 @@ def savedata(newpath: Path,
     df.to_csv(newpath / filename, sep=",", index=False)
 
 
-def main(pathref, scan, material, date, SUBFOLD, band):
+def main(pathref, scan, material, date, SUBFOLD, title, band):
 
     # Common frequency space
     freq_common = np.linspace(band.lf, band.uf, 1000)
@@ -91,13 +93,26 @@ def main(pathref, scan, material, date, SUBFOLD, band):
     scanfold = f"{date}_{scan}"
     sample_dir = base_dir / "Data" / band.name / scanfold / SUBFOLD
 
-    # Stable, deterministic ordering
-    pathlist = sorted(sample_dir.glob("**/*.npz"))
-    n_lines = len(pathlist)
+    # Collect (angle, path) pairs
+    angle_path_pairs = []
 
-    colors = plt.cm.viridis(np.linspace(0, 1, n_lines)) # supposably more intuitive
-    #colors = plt.cm.autumn(np.linspace(0, 1, n_lines)) # 2 colours 
-    
+    for path in sample_dir.glob("**/*.npz"):
+        match = re.search(r"([\d.]+)deg", path.name)
+        if not match:
+            raise ValueError(f"Angle not found in filename: {path.name}")
+        angle = float(match.group(1))
+        angle_path_pairs.append((angle, path))
+
+    # Sort by angle
+    angle_path_pairs.sort(key=lambda x: x[0])
+
+    # Unpack
+    angles_sorted = [ap[0] for ap in angle_path_pairs]
+    paths_sorted  = [ap[1] for ap in angle_path_pairs]
+
+    n_lines = len(paths_sorted)
+    colors = plt.cm.viridis(np.linspace(0, 1, n_lines))
+
     angle_arr = []
     avg_trans_dB = []
 
@@ -105,9 +120,10 @@ def main(pathref, scan, material, date, SUBFOLD, band):
     # Transmission vs frequency
 
     plt.figure(figsize=(9, 6))
-    plt.title("Transmission vs Frequency")
+    plt.title("Transmission vs Frequency - " + title)
 
-    for color, path in zip(colors, pathlist):
+    for color, angle_deg, path in zip(colors, angles_sorted, paths_sorted):
+
 
         filename = path.name
         angle_str = filename.split("_")[2]
@@ -134,10 +150,14 @@ def main(pathref, scan, material, date, SUBFOLD, band):
             label=f"{angle_deg:.1f}°"
         )
 
+    norm = mcolors.Normalize(vmin=min(angles_sorted), vmax=max(angles_sorted))
+    sm = cm.ScalarMappable(norm=norm, cmap="viridis")
+    sm.set_array([])
+    ax = plt.gca()
+    plt.colorbar(sm, ax=ax, label="Angle (deg)")
     plt.xlabel("Frequency (GHz)")
     plt.ylabel("Transmission (dB)")
     plt.grid(True)
-    plt.legend(title="Angle", ncol=2, fontsize=8)
     plt.tight_layout()
     plt.show()
 
@@ -151,7 +171,7 @@ def main(pathref, scan, material, date, SUBFOLD, band):
     idx = np.argsort(angle_arr)  # Sort by angle
 
     plt.figure(figsize=(7, 5))
-    plt.title("Average Transmission vs Angle")
+    plt.title("Average Transmission vs Angle - " + title)
     plt.plot(
         angle_arr[idx],
         avg_trans_dB[idx],
