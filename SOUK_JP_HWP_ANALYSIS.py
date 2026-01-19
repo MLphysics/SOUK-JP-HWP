@@ -104,7 +104,7 @@ def fit_peak_quadratic(x, y, idx, window=5):
     return x_peak, y_peak, xline, yline 
 
 
-def main(pathref, scan, material, date, SUBFOLD, title, band, INTERPPEAKS = True):
+def main(pathref, scan, material, date, SUBFOLD, band, INTERPPEAKS = True):
 
     # Common frequency space
     freq_common = np.linspace(band.lf, band.uf, 1000)
@@ -120,39 +120,23 @@ def main(pathref, scan, material, date, SUBFOLD, title, band, INTERPPEAKS = True
     scanfold = f"{date}_{scan}"
     sample_dir = base_dir / "Data" / band.name / scanfold / SUBFOLD
 
-    # Collect (angle, path) pairs
-    angle_path_pairs = []
+    # Stable, deterministic ordering
+    pathlist = sorted(sample_dir.glob("**/*.npz"))
+    n_lines = len(pathlist)
 
-    for path in sample_dir.glob("**/*.npz"):
-        match = re.search(r"([\d.]+)deg", path.name)
-        if not match:
-            raise ValueError(f"Angle not found in filename: {path.name}")
-        angle = float(match.group(1))
-        angle_path_pairs.append((angle, path))
-
-    # Sort by angle
-    angle_path_pairs.sort(key=lambda x: x[0])
-
-    # Unpack
-    angles_sorted = [ap[0] for ap in angle_path_pairs]
-    paths_sorted  = [ap[1] for ap in angle_path_pairs]
-
-    n_lines = len(paths_sorted)
-    colors = plt.cm.viridis(np.linspace(0, 1, n_lines))
-
+    colors = plt.cm.viridis(np.linspace(0, 1, n_lines)) # supposably more intuitive
+    #colors = plt.cm.autumn(np.linspace(0, 1, n_lines)) # 2 colours 
+    
     angle_arr = []
     avg_trans_dB = []
-
 
     ###################
     # Transmission vs frequency
     ###################
-
     plt.figure(figsize=(9, 6))
-    plt.title("Transmission vs Frequency - " + title)
+    plt.title("Transmission vs Frequency")
 
-    for color, angle_deg, path in zip(colors, angles_sorted, paths_sorted):
-
+    for color, path in zip(colors, pathlist):
 
         filename = path.name
         angle_str = filename.split("_")[2]
@@ -179,27 +163,22 @@ def main(pathref, scan, material, date, SUBFOLD, title, band, INTERPPEAKS = True
             label=f"{angle_deg:.1f}°"
         )
 
-    norm = mcolors.Normalize(vmin=min(angles_sorted), vmax=max(angles_sorted))
-    sm = cm.ScalarMappable(norm=norm, cmap="viridis")
-    sm.set_array([])
-    ax = plt.gca()
-    plt.colorbar(sm, ax=ax, label="Angle (deg)")
     plt.xlabel("Frequency (GHz)")
     plt.ylabel("Transmission (dB)")
     plt.grid(True)
+    plt.legend(title="Angle", ncol=2, fontsize=8)
     plt.tight_layout()
     plt.show()
     ###################
     # Transmission Vs Frequency end
     ###################
 
-    # Average transmission vs angle
     # order the data
     angle_arr = np.array(angle_arr)   ### make sure this is arr not strings 
     avg_trans_dB = np.array(avg_trans_dB)
-
-   
+    
     idx_ang = np.argsort(angle_arr)
+    
     angle_arr    = angle_arr[idx_ang]
     avg_trans_dB = avg_trans_dB[idx_ang]
 
@@ -243,10 +222,15 @@ def main(pathref, scan, material, date, SUBFOLD, title, band, INTERPPEAKS = True
     # Average transmission vs angle plot start
     ###################
 
+
+
     plt.figure(figsize=(7, 5))
-    plt.title("Average Transmission vs Angle - " + title)
+    plt.title("Average Transmission vs Angle")
+    
     plt.scatter(peak_ang , peak_vals, marker = "x", c= "r", label="peaks") ### add peaks to our plot
-# Label raw peak points
+    
+    
+    # Label raw peak points
     for x, y in zip(peak_ang, peak_vals):
         plt.annotate(
             f"({x:.1f}°, {y:.2f} dB)",
@@ -257,17 +241,15 @@ def main(pathref, scan, material, date, SUBFOLD, title, band, INTERPPEAKS = True
             color="red"
         )
     
-    if INTERPPEAKS == True:
-        plt.scatter(peak_ang_interp, peak_vals_interp, marker = "x", c= "black", alpha= 0.3, label="peaks from quadratic") ### add peaks to our plot
+    if INTERPPEAKS:
+        plt.scatter(peak_ang_interp, peak_vals_interp, marker="x", c="black", alpha=0.3, label="peaks from quadratic")
         
-        idxx = np.argsort(np.array(peak_ang_interp_line))
-        
-        peak_ang_interp_line=np.array(peak_ang_interp_line)[idxx]
-        peak_vals_interp_line=np.array(peak_vals_interp_line)[idxx]
-        
-        plt.plot(peak_ang_interp_line, peak_vals_interp_line, c="black", alpha=0.3)
-        
-        
+        # Plot each quadratic line individually in correct order
+        for xline, yline in zip(peak_ang_interp_line, peak_vals_interp_line):
+            # Make sure xline is sorted (ascending) before plotting
+            idx_sort = np.argsort(xline)
+            plt.plot(xline[idx_sort], yline[idx_sort], c="black", alpha=0.3, lw = 5)
+    
         # Label quadratic-interpolated peak points
         for x, y in zip(peak_ang_interp, peak_vals_interp):
             plt.annotate(
@@ -278,23 +260,27 @@ def main(pathref, scan, material, date, SUBFOLD, title, band, INTERPPEAKS = True
                 fontsize=8,
                 color="black",
                 alpha=0.3
-            )    
-        plt.plot(
+            )
+
+
+    
+    
+    
+    plt.plot(
         angle_arr,
         avg_trans_dB,
         marker="o",
         ms=3,
         linestyle="-"
     )
+    
+    
     plt.xlabel("Angle (deg)")
     plt.ylabel("Average Transmission (dB)")
     plt.grid(True)
-    plt.legend()
     plt.tight_layout()
+    plt.legend()
     plt.show()
     ###################
     # Average transmission vs angle plot start
     ###################
-
-
-
