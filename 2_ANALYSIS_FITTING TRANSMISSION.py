@@ -123,7 +123,7 @@ def main(pathref, scan, material, date, SUBFOLD, band):
         outdir = base_dir / "Data" / "Transmission"
         savedata(outdir, material, band.name, date, angle_deg, dft)
 
-        # Average in dB space (CRITICAL FIX)
+        # Average in dB space 
         avg_trans_dB.append(np.mean(dft["trans_dB"]))
         angle_arr.append(angle_deg)
 
@@ -166,6 +166,7 @@ def main(pathref, scan, material, date, SUBFOLD, band):
 
 
 
+
 ### RUN HERE 
 main(
     pathref=Path.cwd()
@@ -179,3 +180,6 @@ main(
     SUBFOLD="MLOG",
     band=Gband
 )
+
+
+
