@@ -47,7 +47,7 @@ BAND = ["GBand",]
 
 
 SAMPLE = "20260116_MF2_rotation_test"
-"detailed" / "IMAG"
+#"detailed" / "IMAG"
 angle = [0]
 
 
