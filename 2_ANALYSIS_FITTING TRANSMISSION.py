@@ -245,7 +245,7 @@ def main(pathref, scan, material, date, SUBFOLD, band, INTERPPEAKS = True):
         for xline, yline in zip(peak_ang_interp_line, peak_vals_interp_line):
             # Make sure xline is sorted (ascending) before plotting
             idx_sort = np.argsort(xline)
-            plt.plot(xline[idx_sort], yline[idx_sort], c="black", alpha=0.3)
+            plt.plot(xline[idx_sort], yline[idx_sort], c="black", alpha=0.3, lw = 5)
     
         # Label quadratic-interpolated peak points
         for x, y in zip(peak_ang_interp, peak_vals_interp):
@@ -270,7 +270,6 @@ def main(pathref, scan, material, date, SUBFOLD, band, INTERPPEAKS = True):
         ms=3,
         linestyle="-"
     )
-    
     
     
     plt.xlabel("Angle (deg)")
