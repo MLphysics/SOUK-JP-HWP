@@ -360,13 +360,13 @@ def main(scan, material, date, SUBFOLD, band,
 # RUN
 # =====================
 main(
-    scan="MF3_rotation_center",
-    material="sapphire_MF3",
+    scan="MF1_rotation",
+    material="sapphire",
     date="20260120",
     SUBFOLD="MLOG",
     band=Fband,
     INTERPPEAKS=True,
-    TRANS_SCALE=TransScale.DB,
+    TRANS_SCALE=TransScale.LINEAR,
     trimfunnydata=True,
     ANNOTE_RAW=True,
     ANNOTE_INTERP=False
