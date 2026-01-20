@@ -142,11 +142,29 @@ def process_scan(sample_paths, dfref, freq_common, TRANS_SCALE,
 
     return angles_sorted, yavg, peak_angles, ypeaks, quad_fits, trans_curves_sorted
 
+def create_peak_table(peak_ang_5, ypeaks_5, quad_fits_5, peak_ang_d, ypeaks_d, quad_fits_d):
+    n_peaks = max(len(peak_ang_5), len(quad_fits_5), len(peak_ang_d), len(quad_fits_d))
+    
+    data = {}
+    for i in range(n_peaks):
+        raw_5 = f"({peak_ang_5[i]:.2f}°, {ypeaks_5[i]:.2f} dB)" if i < len(peak_ang_5) else "-"
+        interp_5 = f"({quad_fits_5[i][0]:.2f}°, {quad_fits_5[i][1]:.2f} dB)" if i < len(quad_fits_5) else "-"
+        raw_1 = f"({peak_ang_d[i]:.2f}°, {ypeaks_d[i]:.2f} dB)" if i < len(peak_ang_d) else "-"
+        interp_1 = f"({quad_fits_d[i][0]:.2f}°, {quad_fits_d[i][1]:.2f} dB)" if i < len(quad_fits_d) else "-"
+        data[f"Peak {i+1}"] = [raw_5, interp_5, raw_1, interp_1]
+    
+    table = pd.DataFrame(data, index=["5° raw", "5° interp", "1° raw", "1° interp"])
+    return table
+
+# =====================
 # MAIN
+# =====================
 def main(scan, material, date, SUBFOLD, band,
          INTERPPEAKS=True,
          TRANS_SCALE=TransScale.DB,
-         trimfunnydata=False):
+         trimfunnydata=False,
+         ANNOTE_RAW=True,      # <--- raw peak annotations
+         ANNOTE_INTERP=True):  # <--- interpolated peak annotations
 
     base_dir = Path.cwd()
     freq_common = np.linspace(band.lf, band.uf, 1000)
@@ -225,21 +243,24 @@ def main(scan, material, date, SUBFOLD, band,
 
     plt.plot(angles_5, yavg_5, "-r", ms=3, label="5 degree")
     plt.scatter(peak_ang_5, ypeaks_5, c="r", marker="x", label="5 degree - Raw peaks")
-    for x, y_db in zip(peak_ang_5, ypeaks_5):
-        plt.annotate(f"({x:.1f}°, {y_db:.2f} dB)", xy=(x, y_db), xytext=(5,5),
-                     textcoords="offset points", fontsize=8, color="red")
+    if ANNOTE_RAW:
+        for x, y_db in zip(peak_ang_5, ypeaks_5):
+            plt.annotate(f"({x:.1f}°, {y_db:.2f} dB)", xy=(x, y_db), xytext=(5,5),
+                         textcoords="offset points", fontsize=8, color="red")
 
     if INTERPPEAKS:
         for xp, yp, xline, yline in quad_fits_5:
             yline_plot = yline if TRANS_SCALE == TransScale.DB else dB_to_linear(yline)
             plt.plot(xline, yline_plot, "k", alpha=0.3, lw=4)
             yp_plot = yp if TRANS_SCALE == TransScale.DB else dB_to_linear(yp)
-            plt.scatter(xp, yp_plot, c="black", alpha=0.4)
-            plt.annotate(f"({xp:.2f}°, {yp:.2f} dB)", xy=(xp, yp_plot),
-                         xytext=(5,-10), textcoords="offset points", fontsize=8, color="black", alpha=0.5)
+            plt.scatter(xp, yp_plot, c="r", alpha=0.4)
+            if ANNOTE_INTERP:
+                plt.annotate(f"({xp:.2f}°, {yp:.2f} dB)", xy=(xp, yp_plot),
+                             xytext=(5,-10), textcoords="offset points", fontsize=8, color="black", alpha=0.5)
 
     # Detailed 1° scan
     detailed_dir = base_dir / "Data" / band.name / scanfold / "detailed" / SUBFOLD
+    detailed_paths = []
     if detailed_dir.exists():
         detailed_paths = sorted(detailed_dir.glob("*.npz"))
         if detailed_paths:
@@ -250,20 +271,21 @@ def main(scan, material, date, SUBFOLD, band,
 
             plt.scatter(angles_d, yavg_d, c="b", marker="+", label="1 degree")
             plt.scatter(peak_ang_d, ypeaks_d, c="b", marker="x", label="1 degree - Raw peaks")
-
-            for x, y_db in zip(peak_ang_d, ypeaks_d):
-                plt.annotate(f"({x:.1f}°, {y_db:.2f} dB)", xy=(x, y_db),
-                             xytext=(5,5), textcoords="offset points", fontsize=8, color="blue")
+            if ANNOTE_RAW:
+                for x, y_db in zip(peak_ang_d, ypeaks_d):
+                    plt.annotate(f"({x:.1f}°, {y_db:.2f} dB)", xy=(x, y_db),
+                                 xytext=(5,5), textcoords="offset points", fontsize=8, color="blue")
 
             if INTERPPEAKS:
                 for xp, yp, xline, yline in quad_fits_d:
                     yline_plot = yline if TRANS_SCALE == TransScale.DB else dB_to_linear(yline)
                     plt.plot(xline, yline_plot, "black", alpha=0.3, lw=4)
                     yp_plot = yp if TRANS_SCALE == TransScale.DB else dB_to_linear(yp)
-                    plt.scatter(xp, yp_plot, c="black", alpha=0.4)
-                    plt.annotate(f"detailed interp: ({xp:.2f}°, {yp:.2f} dB)",
-                                 xy=(xp, yp_plot), xytext=(5,-10), textcoords="offset points",
-                                 fontsize=8, color="black", alpha=0.5)
+                    plt.scatter(xp, yp_plot, c="b", alpha=0.4)
+                    if ANNOTE_INTERP:
+                        plt.annotate(f"detailed interp: ({xp:.2f}°, {yp:.2f} dB)", xy=(xp, yp_plot),
+                                     xytext=(5,-10), textcoords="offset points",
+                                     fontsize=8, color="black", alpha=0.5)
 
     plt.xlabel("Angle (deg)")
     plt.ylabel("Avg Transmission (dB)" if TRANS_SCALE == TransScale.DB else "Avg |S21| (linear)")
@@ -271,19 +293,26 @@ def main(scan, material, date, SUBFOLD, band,
     plt.legend(fontsize=8)
     plt.tight_layout()
     plt.show()
-
+    
+    ### summary table
+    if detailed_paths:
+        peak_table = create_peak_table(peak_ang_5, ypeaks_5, quad_fits_5,
+                               peak_ang_d, ypeaks_d, quad_fits_d)
+        print("\nPeak summary table:\n")
+        print(peak_table.to_string())
 
 # =====================
 # RUN
 # =====================
-
 main(
-    scan="MF2_3_rotation",
-    material="sapphire_MF2",
-    date="20260119",
+    scan="MF3_3_rotation",
+    material="sapphire_MF3",
+    date="20260120",
     SUBFOLD="MLOG",
     band=Fband,
     INTERPPEAKS=True,
     TRANS_SCALE=TransScale.DB,
-    trimfunnydata=True,
+    trimfunnydata=True, ## trims anythinglower that -4 dB
+    ANNOTE_RAW=True, ## annotate the raw data ?
+    ANNOTE_INTERP=False ## annotate the interpolations ?
 )
