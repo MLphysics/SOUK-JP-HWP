@@ -263,7 +263,7 @@ def measure_peak_widths_freq(freq, trans_curves, angles, peak_angles, TRANS_SCAL
     angles_sorted = list(peak_widths_dict.keys())
     for i, idx in enumerate(width_sorted_idx):
         angle = angles_sorted[idx]
-        label = 'O' if i < 2 else 'E'
+        label = 'E' if i < 2 else 'O'
         peak_labels[angle] = label
 
     return peak_labels, peak_widths_dict
@@ -491,8 +491,8 @@ def main(scan, material, date, SUBFOLD, band,
 # RUN
 # =====================
 main(
-    scan="MF5_rotation",
-    material="sapphire_MF5",
+    scan="MF6_rotation",
+    material="sapphire_MF6",
     date="20260121",
     SUBFOLD="MLOG",
     band=Fband,
