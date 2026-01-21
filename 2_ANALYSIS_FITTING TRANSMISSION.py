@@ -263,7 +263,7 @@ def measure_peak_widths_freq(freq, trans_curves, angles, peak_angles, TRANS_SCAL
     angles_sorted = list(peak_widths_dict.keys())
     for i, idx in enumerate(width_sorted_idx):
         angle = angles_sorted[idx]
-        label = 'O' if i < 2 else 'E'
+        label = 'E' if i < 2 else 'O'
         peak_labels[angle] = label
 
     return peak_labels, peak_widths_dict
@@ -341,6 +341,26 @@ def main(scan, material, date, SUBFOLD, band,
         peak_labels_d, peak_widths_d = measure_peak_widths_freq(
             freq_common, trans_curves_d, angles_d, peak_ang_d, TRANS_SCALE
         )
+        
+        
+    # ======================
+    # Identify ordinary / extraordinary axes using frequency peak widths
+    # ======================
+    if detailed_paths and len(peak_ang_d) > 0:
+        peak_labels, peak_widths = measure_peak_widths_freq(
+            freq_common, trans_curves_d, angles_d, peak_ang_d, TRANS_SCALE
+        )
+        peak_angles_to_plot = peak_ang_d
+        trans_curves_peak = trans_curves_d
+        angles_peak = angles_d
+    else:
+        peak_labels, peak_widths = measure_peak_widths_freq(
+            freq_common, trans_curves_sorted, angles_5, peak_ang_5, TRANS_SCALE
+        )
+        peak_angles_to_plot = peak_ang_5
+        trans_curves_peak = trans_curves_sorted
+        angles_peak = angles_5
+
 
     
     # ======================
@@ -372,7 +392,7 @@ def main(scan, material, date, SUBFOLD, band,
         trans_curves_peak = trans_curves_d
         angles_peak = angles_d
         peak_color = "r"
-        peak_label_text = "Peak-angle spectra (detailed 1°)"
+        peak_label_text = "Peak-angle spectra (detailed ±1°)"
     else:
         peak_angles_to_plot = peak_ang_5
         trans_curves_peak = trans_curves_sorted
@@ -385,16 +405,24 @@ def main(scan, material, date, SUBFOLD, band,
         idx = np.where(np.isclose(angles_peak, pa))[0][0]
         yplot = trans_curves_peak[idx]
         yplot = yplot if TRANS_SCALE == TransScale.DB else dB_to_linear(yplot)
-        ax.plot(freq_common, yplot, ls=":", color=peak_color, lw=2.5, alpha=1.0, zorder=3)
-        peak_legend_handles.append(Line2D([0], [0], color="White", lw=2.5, label=f"Peak spectrum: {pa:.2f}°"))
+        
+        # Determine color and label from peak width classification
+        label_type = peak_labels[pa]  # 'O' or 'E'
+        color = "blue" if label_type == 'O' else "red"
+        legend_text = f"{label_type} axis: {pa:.2f}°"
+    
+        ax.plot(freq_common, yplot, ls=":", color=color, lw=2.5, alpha=1.0, zorder=3)
+        peak_legend_handles.append(Line2D([0], [0], color=color, lw=2.5, label=legend_text))
+
 
     # Legend
     opacity_handles = [
         Line2D([0], [0], color="k", ls="-", lw=1.5, alpha=0.2, label="Non-peak spectra"),
-        Line2D([0], [0], color=peak_color, ls=":", lw=2.5, alpha=1.0, label=peak_label_text)
+        Line2D([0], [0], color="k", ls=":", lw=2.5, alpha=1.0, label=peak_label_text)
     ]
     legend_handles = opacity_handles + peak_legend_handles
     ax.legend(handles=legend_handles, title="Transmission spectra", fontsize=8, title_fontsize=9, loc="best")
+
 
     plt.xlabel("Frequency (GHz)")
     plt.ylabel("Transmission (dB)" if TRANS_SCALE == TransScale.DB else "|S21| (linear)")
@@ -415,8 +443,8 @@ def main(scan, material, date, SUBFOLD, band,
     plt.figure(figsize=(7, 5))
     plt.title(f"{scan}: Average Transmission vs Angle")
 
-    plt.plot(angles_5, yavg_5, "-r", ms=3, label="5 degree")
-    plt.scatter(peak_ang_5, ypeaks_5, c="r", marker="x", label="5 degree - Raw peaks")
+    plt.plot(angles_5, yavg_5, "-r", ms=3, label="±5°")
+    plt.scatter(peak_ang_5, ypeaks_5, c="r", marker="x", label="±5° - Raw peaks")
     if ANNOTE_RAW:
         for x, y_db in zip(peak_ang_5, ypeaks_5):
             plt.annotate(f"({x:.1f}°, {y_db:.2f} dB)", xy=(x, y_db), xytext=(5,5),
@@ -436,8 +464,8 @@ def main(scan, material, date, SUBFOLD, band,
 
     # Detailed 1° scan plotting
     if detailed_paths:
-        plt.scatter(angles_d, yavg_d, c="b", marker="+", label="1 degree")
-        plt.scatter(peak_ang_d, ypeaks_d, c="b", marker="x", label="1 degree - Raw peaks")
+        plt.scatter(angles_d, yavg_d, c="b", marker="+", label="±1°")
+        plt.scatter(peak_ang_d, ypeaks_d, c="b", marker="x", label="±1° - Raw peaks")
         if ANNOTE_RAW:
             for x, y_db in zip(peak_ang_d, ypeaks_d):
                 plt.annotate(f"({x:.1f}°, {y_db:.2f} dB)", xy=(x, y_db),
@@ -482,7 +510,6 @@ def main(scan, material, date, SUBFOLD, band,
 
     # ======================
     # 3D Transmission plot
-    # ======================
     plot_3d_transmission(angles_5, freq_common, trans_curves_sorted, scan, TRANS_SCALE=TRANS_SCALE)
 
 
@@ -491,9 +518,9 @@ def main(scan, material, date, SUBFOLD, band,
 # RUN
 # =====================
 main(
-    scan="MF5_rotation",
-    material="sapphire_MF5",
-    date="20260121",
+    scan="MF4_rotation",
+    material="sapphire_MF4",
+    date="20260120",
     SUBFOLD="MLOG",
     band=Fband,
     INTERPPEAKS=True,
