@@ -136,7 +136,7 @@ def process_scan(sample_paths, dfref, freq_common, TRANS_SCALE,
                 for i in seg_peaks:
                     quad_fits.append(fit_peak_quadratic(
                         angles_sorted, avg_trans_dB_sorted, i,
-                        window=max(4, len(seg_idx)//4)
+                        window=max(3, len(seg_idx)//4)
                     ))
         else:
             for i in peaks:
