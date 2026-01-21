@@ -196,6 +196,24 @@ def plot_3d_transmission(angles, freq, trans_curves, scan, TRANS_SCALE=TransScal
     plt.tight_layout()
     plt.show()
 
+def peak_to_peak_transmission(freq, trans_curves, angles, peak_angles, TRANS_SCALE):
+    """
+    Compute peak-to-peak transmission (max-min over frequency)
+    for each peak-angle transmission spectrum.
+    
+    Returns:
+        dict: {angle: peak_to_peak_value}
+    """
+    ptp_dict = {}
+
+    for pa in peak_angles:
+        idx = np.where(np.isclose(angles, pa))[0][0]
+        spectrum = trans_curves[idx]
+
+        y = spectrum if TRANS_SCALE == TransScale.DB else dB_to_linear(spectrum)
+        ptp_dict[pa] = np.max(y) - np.min(y)
+
+    return ptp_dict
 
 
 # =====================
@@ -354,19 +372,17 @@ def main(scan, material, date, SUBFOLD, band,
     # Plot 3D transmission vs frequency and angle
     plot_3d_transmission(angles_sorted, freq_common, trans_curves_sorted, scan,  TRANS_SCALE=TRANS_SCALE)
 
-
-
 # =====================
 # RUN
 # =====================
 main(
-    scan="MF1_rotation",
-    material="sapphire",
-    date="20260120",
+    scan="MF5_rotation",
+    material="sapphire_MF5",
+    date="20260121",
     SUBFOLD="MLOG",
     band=Fband,
     INTERPPEAKS=True,
-    TRANS_SCALE=TransScale.LINEAR,
+    TRANS_SCALE=TransScale.DB,
     trimfunnydata=True,
     ANNOTE_RAW=True,
     ANNOTE_INTERP=False
