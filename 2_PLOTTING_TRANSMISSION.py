@@ -40,7 +40,10 @@ class schema:
 
 def importfile(file):
     f = np.load(file)
+    return f
 
+def maxtransmissions 
+    
 
 def simpleplot(dfsam, dfref):
     plt.figure()

@@ -25,6 +25,7 @@ class Band:
 
 Gband = Band("Gband", 140, 220)
 Fband = Band("Fband", 90, 140)
+Eband = Band("Eband", 55, 95)
 
 #####
 # Transmission scale
@@ -590,11 +591,11 @@ def main(scan, material, date, SUBFOLD, band,
 
 
 main(
-    scan="MF1_rotation",
-    material="sapphire_MF1",
-    date="20260121",
+    scan="MF3_rotation",
+    material="sapphire_MF3",
+    date="20260122",
     SUBFOLD="MLOG",
-    band=Gband,
+    band=Eband,
     INTERPPEAKS=True,
     TRANS_SCALE=TransScale.DB,
     trimfunnydata=True,
