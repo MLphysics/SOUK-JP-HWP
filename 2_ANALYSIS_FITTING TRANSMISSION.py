@@ -269,6 +269,54 @@ def measure_peak_widths_freq(freq, trans_curves, angles, peak_angles, TRANS_SCAL
     return peak_labels, peak_widths_dict
 
 
+def save_transmission_vs_frequency(
+    freq,
+    angles_5, trans_5,
+    angles_d=None, trans_d=None,
+    peak_labels_5=None,
+    peak_labels_d=None,
+    band=None, material=None, scan=None, date=None
+    ):
+    """
+    Save transmission vs frequency for 5° and optional 1° scans
+    with O/E/X tagging in column headers 
+    O: Ordinary / E Extra-ordinary / X: off-aXis .
+    """
+
+    df_freq = pd.DataFrame({"freq_GHz": freq})
+    cols = {}
+
+    # ---------- 5° data ----------
+    for ang, tr in zip(angles_5, trans_5):
+        tag = peak_labels_5.get(ang, "X") if peak_labels_5 else "X"
+        colname = f"trans_5deg_{ang:.1f}deg_{tag}"
+        cols[colname] = tr
+
+    # ---------- 1° data ----------
+    if angles_d is not None and len(angles_d) > 0:
+        for ang, tr in zip(angles_d, trans_d):
+            tag = peak_labels_d.get(ang, "X") if peak_labels_d else "X"
+            colname = f"trans_1deg_{ang:.1f}deg_{tag}"
+            cols[colname] = tr
+
+    df_trans = pd.DataFrame(cols)
+    df = pd.concat([df_freq, df_trans], axis=1)
+
+    # ---------- Save path ----------
+    save_dir = Path.cwd() / "Data" / "Transmission"
+    save_dir.mkdir(parents=True, exist_ok=True)
+
+    filename = (
+        f"{band.name}_trans_"
+        f"{material}_{date}.txt"
+    )
+
+    save_path = save_dir / filename
+    df.to_csv(save_path, sep="\t", index=False)
+
+    print(f"\nTransmission data saved to:\n{save_path}")
+
+
 
 # =====================
 # MAIN
@@ -279,7 +327,8 @@ def main(scan, material, date, SUBFOLD, band,
          TRANS_SCALE=TransScale.DB,
          trimfunnydata=False,
          ANNOTE_RAW=True,
-         ANNOTE_INTERP=True):
+         ANNOTE_INTERP=True,
+         save_data = False):
 
     base_dir = Path.cwd()
     freq_common = np.linspace(band.lf, band.uf, 1000)
@@ -503,7 +552,9 @@ def main(scan, material, date, SUBFOLD, band,
     else:
         peak_table = create_peak_table(
             peak_ang_5, ypeaks_5, quad_fits_5,
-            peak_labels_5=peak_labels_5
+            peak_ang_d=[], ypeaks_d=[], quad_fits_d=[],
+            peak_labels_5=peak_labels_5,
+            peak_labels_d=[]
         )
     print("\nPeak summary table:\n")
     print(peak_table.to_string())
@@ -512,7 +563,23 @@ def main(scan, material, date, SUBFOLD, band,
     # 3D Transmission plot
     plot_3d_transmission(angles_5, freq_common, trans_curves_sorted, scan, TRANS_SCALE=TRANS_SCALE)
 
-
+    # ======================
+    # Save the data
+    # ======================
+    if save_data:
+        save_transmission_vs_frequency(
+            freq=freq_common,
+            angles_5=angles_5,
+            trans_5=trans_curves_sorted,
+            angles_d=angles_d if detailed_paths else None,
+            trans_d=trans_curves_d if detailed_paths else None,
+            peak_labels_5=peak_labels_5,
+            peak_labels_d=peak_labels_d if detailed_paths else None,
+            band=band,
+            material=material,
+            scan=scan,
+            date=date
+        )
 
 
 
@@ -520,15 +587,18 @@ def main(scan, material, date, SUBFOLD, band,
 # =====================
 # RUN
 # =====================
+
+
 main(
-    scan="MF4_rotation",
-    material="sapphire_MF4",
-    date="20260120",
+    scan="MF1_rotation",
+    material="sapphire_MF1",
+    date="20260121",
     SUBFOLD="MLOG",
-    band=Fband,
+    band=Gband,
     INTERPPEAKS=True,
     TRANS_SCALE=TransScale.DB,
     trimfunnydata=True,
     ANNOTE_RAW=True,
-    ANNOTE_INTERP=False
+    ANNOTE_INTERP=False,
+    save_data = True
 )

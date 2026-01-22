@@ -12,6 +12,16 @@ from pathlib import Path
 from scipy.signal import welch
 
 
+class Band:
+    def __init__(self, name, lf, uf):
+        self.name = name
+        self.lf = lf
+        self.uf = uf
+
+Gband = Band("Gband", 140, 220)
+Fband = Band("Fband", 90, 140)
+Eband = Band("Eband", 60, 90)
+
 class schema:
     freq = 'freq_data' 
     trans = 'trans_data' 
@@ -41,9 +51,9 @@ def simpleplot(dfsam, dfref):
 
 
 
-DIR = ( Path.home() / "OneDrive" / "Documents" / "PhD Cardiff" / "Git repos" / "SOUK-JP-HWP-" / "Data")
+DIR = ( Path.cwd() /  "Data")
 
-BAND = ["GBand",]
+BAND = ["GBand", "FBand"]
 
 
 SAMPLE = "20260116_MF2_rotation_test"
