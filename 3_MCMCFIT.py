@@ -20,35 +20,77 @@ from ARCS.schema import DataSchema
 #-
 
 
+
 class DUT:
-    
-    # Sapphire Plate Thicknesses
-    MF1 = 3.7434
-    MF2 = 3.7399
-    MF3 = 3.7462
-    MF4 = 3.7869
-    MF5 = 3.7475
-    MF6 = 3.774894035
-    MF7 = 3.8038
-    MF8 = 3.7650
-    
-    # Sapphire Plate Thicknesses err
-    MF1 = 0.0177
-    MF2 = 0.0091
-    MF3 = 0.0124
-    MF4 = 0.0030
-    MF5 = 0.0030
-    MF6 = 0.0069
-    MF7 = 0.0175
-    MF8 = 0.0075
+    def __init__(self, th=0   , th_err=0 ,
+                        nO=0   , nO_err=0  ,
+                        nE=0   , nE_err=0  ,
+                        lossO=0, lossO_err=0,
+                        lossE=0, lossE_err=0,
+                        n = 0, n_err=0,
+                        loss = 0, loss_err = 0):
+        self.th = th
+        self.th_err = th_err
+        self.nO = nO 
+        self.nO_err = nO_err
+        self.nE = nE 
+        self.nE_err = nE_err
+        self.lossO = lossO
+        self.lossE_err = lossE_err
+        
+class theta_class:
+    def __init__(self,length    = 0,
+                 layer1_n = 0,
+                 slab_n   = 0, slab_loss=0,
+                 layer1_th= 0,
+                 slab_th  = 0 ):
+        self.layer1_n  = layer1_n
+        self.slab_n    = slab_n
+        self.slab_loss = slab_loss
+        self.layer1_th = layer1_th,
+        self.slab_th   = slab_th 
 
-
-    """
-    LF1 =
-    LF2 = 
-    LF3 = 
-    LF4 = 
-    """
+# Sapphire Plate Thicknesses
+MF1 = DUT(th=3.7434e-3     , th_err=0.0177e-3,
+          nO=3.05, nO_err=0.01, lossO=0.0005, lossO_err= 0.0001, 
+          nE=3.39, nE_err=0.01, lossE=0.0005, lossE_err= 0.0001)
+MF2 = DUT(th=3.7399e-3     , th_err=0.0091e-3, 
+          nO=3.05, nO_err=0.01, lossO=0.0005, lossO_err= 0.0001, 
+          nE=3.39, nE_err=0.01, lossE=0.0005, lossE_err= 0.0001)
+MF3 = DUT(th=3.7462e-3     , th_err=0.0124e-3, 
+          nO=3.05, nO_err=0.01, lossO=0.0005, lossO_err= 0.0001, 
+          nE=3.39, nE_err=0.01, lossE=0.0005, lossE_err= 0.0001)
+MF4 = DUT(th=3.7869e-3     , th_err=0.003e-3 , 
+          nO=3.05, nO_err=0.01, lossO=0.0005, lossO_err= 0.0001, 
+          nE=3.39, nE_err=0.01, lossE=0.0005, lossE_err= 0.0001)
+MF5 = DUT(th=3.7475e-3     , th_err=0.0030e-3, 
+          nO=3.05, nO_err=0.01, lossO=0.0005, lossO_err= 0.0001, 
+          nE=3.39, nE_err=0.01, lossE=0.0005, lossE_err= 0.0001)
+MF6 = DUT(th=3.774894035e-3, th_err=0.0069e-3, 
+          nO=3.05, nO_err=0.01, lossO=0.0005, lossO_err= 0.0001, 
+          nE=3.39, nE_err=0.01, lossE=0.0005, lossE_err= 0.0001)
+MF7 = DUT(th=3.8038e-3     , th_err=0.0175e-3, 
+          nO=3.05, nO_err=0.01, lossO=0.0005, lossO_err= 0.0001, 
+          nE=3.39, nE_err=0.01, lossE=0.0005, lossE_err= 0.0001)
+MF8 = DUT(th=3.7650e-3     , th_err=0.0075e-3, 
+          nO=3.05, nO_err=0.01, lossO=0.0005, lossO_err= 0.0001, 
+          nE=3.39, nE_err=0.01, lossE=0.0005, lossE_err= 0.0001)
+## ==============================================================
+AF1 = DUT(th=3e-3          , th_err=0.03e-3,
+          n=3.121, n_err=0.02, loss=0.0003, loss_err=0.0001)  ## double check alumina thickness+err
+Dur = DUT(th= 0.394, th_err= 0.01,
+          n=1.41, n_err=0.0120)
+Mul = DUT(th=394e-6       , th_err=10e-6,
+           n=2.52, n_err=0.0212) ## double check coating thickness+err
+Epo = DUT(th=40e-6, th_err= 10e-6,
+          n = 1.7, n_err=0.01)
+## ==============================================================
+"""
+LF1 =
+LF2 = 
+LF3 = 
+LF4 = 
+"""
 
 class DataSchema:
     ks = "wave_num"
@@ -68,6 +110,8 @@ class DataSchema:
     transdiff = 'trans_diff'
     
     
+    
+
     
 #### setting some params 
 dut = DUT.MF2
@@ -166,9 +210,12 @@ def ARlayer(Theta):
     ### OUTPUT
     #thickness, refindex : arrays of recipes    
     layers = len(Theta) # given the specific format for the recipes they can be identified by the number of parameters. 
-    if layers == 3:
-        thickness = (np.inf, Theta[0]                   , np.inf)
-        refindex  = (1 , complex(Theta[1],Theta[2]) , 1)
+    if layers == 2:
+        thickness = (np.inf, dut.slab_th                 , np.inf)
+        refindex  = (1 , complex(Theta.slab_n,Theta.slab_loss) , 1)
+    if layers == 5: 
+        thickness = (np.inf, Theta.layer1_th, Theta.slab_th, Theta.layer1_th, np.inf)
+        refindex  = (1 , Theta.layer1_n, complex(Theta.slab_n,Theta.slab_loss), Theta.layer1_n, 1)
     return np.array(thickness), np.array(refindex)
 # TMM model in a format for the MCMC
 def model(theta, x):
@@ -377,6 +424,41 @@ def params_errs(sampler):
     return MLE_thetaRESULT, Med_theta_estimates
     
 
+### loads transmission txts
+def load_transmission_txt(file_path):
+    """
+    Load a transmission TXT file and parse all angle columns.
+
+    Returns
+    -------
+    dict with keys:
+        - 'freq' : np.ndarray
+        - 'angles' : dict {angle_deg: transmission_array}
+    """
+    df = pd.read_csv(file_path, sep=r"\s+")
+
+    freq = df.iloc[:, 0].values  # freq_GHz column
+
+    angle_data = {}
+
+    for col in df.columns[1:]:
+        # Example col:
+        # trans_5deg_40.0deg_X
+        parts = col.split("_")
+
+        try:
+            angle = float(parts[2].replace("deg", ""))
+        except (IndexError, ValueError):
+            continue
+
+        angle_data[angle] = df[col].values
+
+    return {
+        "freq": freq,
+        "angles": angle_data
+    }
+
+
 
 ### PLOT
 def main(dut):
@@ -390,14 +472,18 @@ def main(dut):
     nwalkers = 128
     #set niter - length of the chains
     niter = int(nwalkers*4)
-    #theta taken as: [t1, tg, tlens, n1, ng, nlens]
-    initial = [DUT.dut, # tlens
-               1.526      , # nlens RE
-               1e-4       ] # nlens IM
+    #theta            
+    initial = theta_class(
+                 dut.th,           # tlens
+                 dut.nO,           # nlens RE
+                 dut.lossO)        # nlens IM
+    initial= initial[initial != 0]
     #
-    initialerr = [0.01e-3,  # error on tlens - comes from stdev on measurements 
-                  0.001  ,  # error in path length calculation 
-                  0.5e-4  ] # by eye estimate - hence the large error!
+    initialerr = theta_class(dut.th_err,           # tlens
+                             dut.nO_err,           # nlens RE
+                             dut.loss_Oerr)         # nlens IM
+    initialerr= initialerr[initialerr != 0]
+    
     ndim = len(initial)
     # determine how the walkers walk here - drawn from random normal dist
     #    *mean           * error or standard dev   * rand number from normal dist
