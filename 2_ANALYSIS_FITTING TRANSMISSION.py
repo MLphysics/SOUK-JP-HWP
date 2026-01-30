@@ -206,10 +206,6 @@ def plot_3d_transmission(angles, freq, trans_curves, scan, TRANS_SCALE=TransScal
 
 
 
-
-# -----------------------------
-# Measure peak widths and label as ordinary/extraordinary
-# -----------------------------
 def measure_peak_widths_freq(freq, trans_curves, angles, peak_angles, TRANS_SCALE=TransScale.DB):
     """
     Measure peak widths along frequency for each peak angle.
@@ -239,33 +235,111 @@ def measure_peak_widths_freq(freq, trans_curves, angles, peak_angles, TRANS_SCAL
     # Convert to linear if needed for width measurement
     trans_curves_lin = trans_curves if TRANS_SCALE == TransScale.LINEAR else dB_to_linear(trans_curves)
 
+    peakAV = []
+    
+    """
+    # if, by chance, we mesaured from one of the axes by accident, reorder the data to give clean peaks... 
+    if len(peak_angles) < 4:
+        cut = int(len(angles)* 1/8)
+        period = angles[-1]-angles[0]
+        for i, val in enumerate(angles[-cut:]):
+            #
+            angles[-cut+i] = val - period
+        av_sorted_idx = np.argsort(list(angles))
+        
+    """
+
     for pa in peak_angles:
         # Find index of angle
         idx = np.argmin(np.abs(angles - pa))
         y = trans_curves_lin[idx]
 
-        # Detect frequency peak (assuming 1 main peak per curve)
-        f_peaks, _ = find_peaks(y, prominence=0.1)
-        if len(f_peaks) == 0:
-            # fallback: take max
-            peak_idx = np.argmax(y)
-        else:
-            # closest peak to max value
-            peak_idx = f_peaks[np.argmax(y[f_peaks])]
 
-        # Measure width at half-max
-        results = peak_widths(y, [peak_idx], rel_height=0.5)
-        width_GHz = results[0][0] * (freq[1] - freq[0])
-        peak_widths_dict[pa] = width_GHz
-
+        max_peak_width = False
+        
+        if max_peak_width == True:
+            # Detect frequency peak (assuming 1 main peak per curve)
+            f_peaks, _ = find_peaks(y, prominence=0.1)
+            if len(f_peaks) == 0:
+                # fallback: take max
+                peak_idx = np.argmax(y)
+            else:
+                # closest peak to max value
+                peak_idx = f_peaks[np.argmax(y[f_peaks])]
+                
+            print(y[f_peaks])
+    
+            # Measure width at half-max
+            results = peak_widths(y, [peak_idx], rel_height=0.5)
+            
+            width_GHz = results[0][0] * (freq[1] - freq[0])
+            peak_widths_dict[pa] = width_GHz
+        else: # find all the peak widths + locate the average
+            # Detect frequency peak (assuming 1 main peak per curve)
+            f_peaks, _ = find_peaks(y, prominence=0.1)
+            if len(f_peaks) == 0:
+                # fallback: take max
+                peak_idx = np.argmax(y)
+            else:
+                # closest peak to max value
+                peak_idx = f_peaks
+                
+            
+    
+            # Measure width at half-max
+            results = [peak_widths(y, [i], rel_height=0.5) for i in peak_idx]
+            
+            
+            width_GHz = np.copy(results)
+            for ii in range(len(results[0][0])):
+                for jj in range(len(results[0])):
+                    width_GHz[ii][jj] = results[ii][jj] * (freq[1] - freq[0])
+            
+            peak_widths_dict[pa] = np.average(width_GHz)
+        
+        
+        peakAV.append(np.average(y))
+    
+    # Assign labels: two highest averages -> ordinary, two smallest -> extraordinary
+    av_sorted_idx = np.argsort(list(peakAV))
+    
+    print(av_sorted_idx) 
+    print(list(peakAV))
     # Assign labels: two largest widths -> extraordinary, two smallest -> ordinary
     width_sorted_idx = np.argsort(list(peak_widths_dict.values()))
+    print(width_sorted_idx)
+    print(list(peak_widths_dict.values()))
+
+
     peak_labels = {}
     angles_sorted = list(peak_widths_dict.keys())
-    for i, idx in enumerate(width_sorted_idx):
-        angle = angles_sorted[idx]
-        label = 'E' if i < 2 else 'O'
-        peak_labels[angle] = label
+    
+    
+    ## check if the first 2 as a set is the same as the last 2 as a set:
+    def same_first_last_two(a, b):
+        a = np.asarray(a)
+        b = np.asarray(b)
+    
+        return (
+            set(a[:2]) == set(b[:2]) and
+            set(a[-2:]) == set(b[-2:])
+        )
+    
+    
+    if same_first_last_two(av_sorted_idx, width_sorted_idx) == False:
+        print("recheck: disagreement over average & width approximations for O & E axes")
+        print("Average: ", av_sorted_idx)
+        print("Width: ", width_sorted_idx)
+        print("Using average peak to determine O+E")
+        for i, idx in enumerate(av_sorted_idx):
+            angle = angles_sorted[idx]
+            label = 'E' if i < 2 else 'O'
+            peak_labels[angle] = label
+    else:
+        for i, idx in enumerate(width_sorted_idx):
+            angle = angles_sorted[idx]
+            label = 'E' if i < 2 else 'O'
+            peak_labels[angle] = label
 
     return peak_labels, peak_widths_dict
 
@@ -591,9 +665,9 @@ def main(scan, material, date, SUBFOLD, band,
 
 
 main(
-    scan="MF3_rotation",
-    material="sapphire_MF3",
-    date="20260122",
+    scan= "AF1-1-singleARC", # "MF3_rotation",
+    material="AF1-1-singleARC",
+    date="20260123",
     SUBFOLD="MLOG",
     band=Eband,
     INTERPPEAKS=True,
@@ -601,5 +675,5 @@ main(
     trimfunnydata=True,
     ANNOTE_RAW=True,
     ANNOTE_INTERP=False,
-    save_data = True
+    save_data = False
 )
